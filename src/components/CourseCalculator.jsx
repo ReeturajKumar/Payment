@@ -14,13 +14,15 @@ const CourseCalculator = () => {
   // Constants
   const tenureOptions = [2, 3, 4, 5, 6, 7, 8, 9];
 
-// EMI Date Logic based on admission date
+  // EMI Date Logic based on admission date
   const getEMIDateInfo = (admissionDateStr) => {
     if (!admissionDateStr) return { emiDay: 7, firstEMIMonth: null };
-    
-    const admission = new Date(admissionDateStr);
+
+    // Parse date string manually to avoid timezone issues
+    const [year, month, day] = admissionDateStr.split('-').map(Number);
+    const admission = new Date(year, month - 1, day); // month - 1 because JS months are 0-indexed
     const admissionDay = admission.getDate();
-    
+
     // Determine EMI debit day based on admission date range
     let emiDay;
     if (admissionDay >= 1 && admissionDay <= 20) {
@@ -30,70 +32,96 @@ const CourseCalculator = () => {
     } else {
       emiDay = 7; // default for 31st
     }
-    
+
     // First EMI starts in next calendar month
-    const firstEMI = new Date(admission);
+    const firstEMI = new Date(year, month - 1, day); // start from admission date
     firstEMI.setMonth(firstEMI.getMonth() + 1);
     firstEMI.setDate(emiDay);
-    
+
     return { emiDay, firstEMIMonth: firstEMI };
   };
 
   const emiDateInfo = getEMIDateInfo(admissionDate);
 
+  // Shared date utilities to avoid timezone issues
+  const formatDateForDisplay = (dateStr) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const formatDateLong = (dateStr) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
   // Calendar component
-  const Calendar = () => {
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    
+  const Calendar = ({ selectedDate, onSelect, onClose }) => {
+    const [currentMonth, setCurrentMonth] = useState(() => {
+      if (selectedDate) {
+        const [y, m] = selectedDate.split('-').map(Number);
+        return new Date(y, m - 1, 1);
+      }
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), 1);
+    });
+
     const getDaysInMonth = (date) => {
       return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     };
-    
+
     const getFirstDayOfMonth = (date) => {
       return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     };
-    
+
     const handleDateSelect = (day) => {
-      const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-      setAdmissionDate(formattedDate);
-      setShowCalendar(false);
+      const year = currentMonth.getFullYear();
+      const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+      const formattedDay = String(day).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${formattedDay}`;
+      onSelect(formattedDate);
     };
-    
-    const handlePrevMonth = () => {
-      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+
+    const handlePrevMonth = (e) => {
+      e.stopPropagation();
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
     };
-    
-    const handleNextMonth = () => {
-      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+
+    const handleNextMonth = (e) => {
+      e.stopPropagation();
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
     };
-    
+
     const daysInMonth = getDaysInMonth(currentMonth);
     const firstDay = getFirstDayOfMonth(currentMonth);
     const days = [];
-    
-    // Add empty cells for days before month starts
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-    
-    // Add days of the month
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-    
+
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'];
-    
+
     return (
-      <div className="absolute bottom-full left-0 mb-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 p-4 min-w-[320px]">
+      <div className="absolute bottom-full left-0 mb-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 p-4 min-w-[320px]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-white"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+              <path d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z" />
             </svg>
           </button>
           <h3 className="text-white font-semibold">
@@ -101,14 +129,14 @@ const CourseCalculator = () => {
           </h3>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-white"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+              <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
             </svg>
           </button>
         </div>
-        
+
         <div className="grid grid-cols-7 gap-1 mb-2">
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
             <div key={i} className="text-center text-xs text-slate-500 font-semibold py-2">
@@ -116,20 +144,34 @@ const CourseCalculator = () => {
             </div>
           ))}
         </div>
-        
+
         <div className="grid grid-cols-7 gap-1">
-          {days.map((day, i) => (
-            <div key={i} className="aspect-square">
-              {day && (
-                <button
-                  onClick={() => handleDateSelect(day)}
-                  className="w-full h-full flex items-center justify-center text-sm text-white hover:bg-orange-500/20 rounded-lg transition-colors"
-                >
-                  {day}
-                </button>
-              )}
-            </div>
-          ))}
+          {days.map((day, i) => {
+            const isToday = day &&
+              new Date().getDate() === day &&
+              new Date().getMonth() === currentMonth.getMonth() &&
+              new Date().getFullYear() === currentMonth.getFullYear();
+
+            const isSelected = day && selectedDate === `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            return (
+              <div key={i} className="aspect-square">
+                {day && (
+                  <button
+                    onClick={() => handleDateSelect(day)}
+                    className={`w-full h-full flex items-center justify-center text-sm rounded-lg transition-all ${isSelected
+                        ? 'bg-orange-500 text-white font-bold'
+                        : isToday
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          : 'text-white hover:bg-slate-800'
+                      }`}
+                  >
+                    {day}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -172,7 +214,7 @@ const CourseCalculator = () => {
     }
   };
 
-const handleReset = () => {
+  const handleReset = () => {
     setTotalFee('');
     setDownPayment('');
     setTenure(6);
@@ -198,7 +240,7 @@ const handleReset = () => {
     doc.setTextColor(100);
     doc.text('Detailed Payment Roadmap & Loan Summary', pageWidth / 2, 28, { align: 'center' });
 
-// Loan Summary Section
+    // Loan Summary Section
     doc.setFontSize(14);
     doc.setTextColor(0);
     doc.text('Loan Summary', 14, 45);
@@ -215,7 +257,7 @@ const handleReset = () => {
     // Add admission date and EMI schedule info if available
     if (admissionDate) {
       loanSummaryData.push(
-        ['Admission Date', new Date(admissionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })],
+        ['Admission Date', formatDateLong(admissionDate)],
         ['EMI Debit Day', `${emiDateInfo.emiDay}th of every month`],
         ['First EMI Date', emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) || 'N/A']
       );
@@ -297,7 +339,7 @@ const handleReset = () => {
               <p className="text-slate-400 text-sm mt-1.5 font-medium">Configure your education loan preferences.</p>
             </div>
 
-<div className="space-y-7">
+            <div className="space-y-7">
               {/* Inline Row: Total Course Fee and Down Payment */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Total Course Fee */}
@@ -339,7 +381,7 @@ const handleReset = () => {
                 </div>
               </div>
 
-{/* Inline Row: Admission Date and Loan Tenure */}
+              {/* Inline Row: Admission Date and Loan Tenure */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Admission Date */}
                 <div className="space-y-1.5">
@@ -353,17 +395,22 @@ const handleReset = () => {
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-medium text-sm flex items-center justify-between"
                     >
                       <span className={admissionDate ? 'text-white' : 'text-slate-600'}>
-                        {admissionDate ? new Date(admissionDate).toLocaleDateString('en-IN', { 
-                          day: 'numeric', 
-                          month: 'short', 
-                          year: 'numeric' 
-                        }) : 'Select date'}
+                        {admissionDate ? formatDateForDisplay(admissionDate) : 'Select date'}
                       </span>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" />
                       </svg>
                     </button>
-                    {showCalendar && <Calendar />}
+                    {showCalendar && (
+                      <Calendar
+                        selectedDate={admissionDate}
+                        onSelect={(date) => {
+                          setAdmissionDate(date);
+                          setShowCalendar(false);
+                        }}
+                        onClose={() => setShowCalendar(false)}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -554,21 +601,21 @@ const handleReset = () => {
               </button>
             </div>
 
-{/* Modal Content */}
+            {/* Modal Content */}
             <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
               {/* EMI Schedule Summary */}
               {admissionDate && (
                 <div className="mb-6 p-4 bg-slate-950/50 rounded-xl border border-slate-800">
                   <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-orange-500" viewBox="0 0 16 16">
-                      <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                      <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" />
                     </svg>
                     EMI Schedule Details
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div>
                       <span className="text-slate-500 text-xs">Admission Date:</span>
-                      <p className="text-white font-medium">{new Date(admissionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                      <p className="text-white font-medium">{formatDateLong(admissionDate)}</p>
                     </div>
                     <div>
                       <span className="text-slate-500 text-xs">EMI Debit Day:</span>
@@ -581,9 +628,9 @@ const handleReset = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-{Array.from({ length: tenure }).map((_, i) => {
+                {Array.from({ length: tenure }).map((_, i) => {
                   const date = new Date();
                   if (emiDateInfo.firstEMIMonth) {
                     date.setTime(emiDateInfo.firstEMIMonth.getTime());
