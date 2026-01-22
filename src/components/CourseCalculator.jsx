@@ -6,11 +6,134 @@ const CourseCalculator = () => {
   const [totalFee, setTotalFee] = useState('');
   const [downPayment, setDownPayment] = useState('');
   const [tenure, setTenure] = useState(6);
+  const [admissionDate, setAdmissionDate] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   // Constants
   const tenureOptions = [2, 3, 4, 5, 6, 7, 8, 9];
+
+// EMI Date Logic based on admission date
+  const getEMIDateInfo = (admissionDateStr) => {
+    if (!admissionDateStr) return { emiDay: 7, firstEMIMonth: null };
+    
+    const admission = new Date(admissionDateStr);
+    const admissionDay = admission.getDate();
+    
+    // Determine EMI debit day based on admission date range
+    let emiDay;
+    if (admissionDay >= 1 && admissionDay <= 20) {
+      emiDay = 7;
+    } else if (admissionDay >= 21 && admissionDay <= 30) {
+      emiDay = 15;
+    } else {
+      emiDay = 7; // default for 31st
+    }
+    
+    // First EMI starts in next calendar month
+    const firstEMI = new Date(admission);
+    firstEMI.setMonth(firstEMI.getMonth() + 1);
+    firstEMI.setDate(emiDay);
+    
+    return { emiDay, firstEMIMonth: firstEMI };
+  };
+
+  const emiDateInfo = getEMIDateInfo(admissionDate);
+
+  // Calendar component
+  const Calendar = () => {
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    
+    const getDaysInMonth = (date) => {
+      return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    };
+    
+    const getFirstDayOfMonth = (date) => {
+      return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    };
+    
+    const handleDateSelect = (day) => {
+      const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      setAdmissionDate(formattedDate);
+      setShowCalendar(false);
+    };
+    
+    const handlePrevMonth = () => {
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+    };
+    
+    const handleNextMonth = () => {
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    };
+    
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const days = [];
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    
+    // Add days of the month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i);
+    }
+    
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    return (
+      <div className="absolute bottom-full left-0 mb-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 p-4 min-w-[320px]">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={handlePrevMonth}
+            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+            </svg>
+          </button>
+          <h3 className="text-white font-semibold">
+            {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          </h3>
+          <button
+            onClick={handleNextMonth}
+            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+            <div key={i} className="text-center text-xs text-slate-500 font-semibold py-2">
+              {day}
+            </div>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((day, i) => (
+            <div key={i} className="aspect-square">
+              {day && (
+                <button
+                  onClick={() => handleDateSelect(day)}
+                  className="w-full h-full flex items-center justify-center text-sm text-white hover:bg-orange-500/20 rounded-lg transition-colors"
+                >
+                  {day}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   // Derived Values & Real-time Calculation
   const feeValue = Number(totalFee) || 0;
@@ -49,10 +172,12 @@ const CourseCalculator = () => {
     }
   };
 
-  const handleReset = () => {
+const handleReset = () => {
     setTotalFee('');
     setDownPayment('');
     setTenure(6);
+    setAdmissionDate('');
+    setShowCalendar(false);
     setError('');
   };
 
@@ -73,22 +198,33 @@ const CourseCalculator = () => {
     doc.setTextColor(100);
     doc.text('Detailed Payment Roadmap & Loan Summary', pageWidth / 2, 28, { align: 'center' });
 
-    // Loan Summary Section
+// Loan Summary Section
     doc.setFontSize(14);
     doc.setTextColor(0);
     doc.text('Loan Summary', 14, 45);
 
+    const loanSummaryData = [
+      ['Total Course Fee', `INR ${feeValue.toLocaleString('en-IN')}`],
+      ['Down Payment', `INR ${downPaymentValue.toLocaleString('en-IN')}`],
+      ['Loan Amount', `INR ${loanAmount.toLocaleString('en-IN')}`],
+      ['Loan Tenure', `${tenure} Months`],
+      ['Monthly EMI', `INR ${Math.round(emi).toLocaleString('en-IN')}`],
+      ['Total Payable', `INR ${totalAmount.toLocaleString('en-IN')}`]
+    ];
+
+    // Add admission date and EMI schedule info if available
+    if (admissionDate) {
+      loanSummaryData.push(
+        ['Admission Date', new Date(admissionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })],
+        ['EMI Debit Day', `${emiDateInfo.emiDay}th of every month`],
+        ['First EMI Date', emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) || 'N/A']
+      );
+    }
+
     autoTable(doc, {
       startY: 50,
       head: [['Metric', 'Value']],
-      body: [
-        ['Total Course Fee', `INR ${feeValue.toLocaleString('en-IN')}`],
-        ['Down Payment', `INR ${downPaymentValue.toLocaleString('en-IN')}`],
-        ['Loan Amount', `INR ${loanAmount.toLocaleString('en-IN')}`],
-        ['Loan Tenure', `${tenure} Months`],
-        ['Monthly EMI', `INR ${Math.round(emi).toLocaleString('en-IN')}`],
-        ['Total Payable', `INR ${totalAmount.toLocaleString('en-IN')}`]
-      ],
+      body: loanSummaryData,
       theme: 'grid',
       headStyles: { fillColor: primaryColor },
       styles: { fontSize: 10, cellPadding: 5 }
@@ -101,9 +237,16 @@ const CourseCalculator = () => {
 
     const scheduleData = Array.from({ length: tenure }).map((_, i) => {
       const date = new Date();
-      date.setMonth(date.getMonth() + i);
+      if (emiDateInfo.firstEMIMonth) {
+        date.setTime(emiDateInfo.firstEMIMonth.getTime());
+        date.setMonth(date.getMonth() + i);
+      } else {
+        date.setMonth(date.getMonth() + i);
+      }
       const monthName = date.toLocaleString('default', { month: 'long', year: 'numeric' });
-      return [i + 1, monthName, `INR ${Math.round(emi).toLocaleString('en-IN')}`, 'Scheduled'];
+      const emiDay = emiDateInfo.firstEMIMonth ? emiDateInfo.emiDay : date.getDate();
+      const formattedDate = `${date.getDate()} ${monthName}`;
+      return [i + 1, formattedDate, `INR ${Math.round(emi).toLocaleString('en-IN')}`, 'Scheduled'];
     });
 
     autoTable(doc, {
@@ -154,68 +297,112 @@ const CourseCalculator = () => {
               <p className="text-slate-400 text-sm mt-1.5 font-medium">Configure your education loan preferences.</p>
             </div>
 
-            <div className="space-y-7">
-              {/* Total Course Fee */}
-              <div className="space-y-1.5">
-                <label htmlFor="totalFee" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Total Course Fee
-                </label>
-                <div className="relative group">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium group-focus-within:text-orange-400 transition-colors text-sm">₹</span>
-                  <input
-                    id="totalFee"
-                    type="number"
-                    value={totalFee}
-                    onChange={(e) => handleNumberInput(e, setTotalFee)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="60,000"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 pl-8 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-medium no-spinner text-sm"
-                  />
+<div className="space-y-7">
+              {/* Inline Row: Total Course Fee and Down Payment */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Total Course Fee */}
+                <div className="space-y-1.5">
+                  <label htmlFor="totalFee" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Total Course Fee
+                  </label>
+                  <div className="relative group">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium group-focus-within:text-orange-400 transition-colors text-sm">₹</span>
+                    <input
+                      id="totalFee"
+                      type="number"
+                      value={totalFee}
+                      onChange={(e) => handleNumberInput(e, setTotalFee)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="60,000"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 pl-8 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-medium no-spinner text-sm"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Down Payment */}
-              <div className="space-y-1.5">
-                <label htmlFor="downPayment" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Down Payment
-                </label>
-                <div className="relative group">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium group-focus-within:text-orange-400 transition-colors text-sm">₹</span>
-                  <input
-                    id="downPayment"
-                    type="number"
-                    value={downPayment}
-                    onChange={(e) => handleNumberInput(e, setDownPayment)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="10,000"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 pl-8 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-medium no-spinner text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Loan Tenure (Dropdown) */}
-              <div className="space-y-1.5">
-                <label htmlFor="tenure" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Loan Tenure
-                </label>
-                <div className="relative">
-                  <select
-                    id="tenure"
-                    value={tenure}
-                    onChange={(e) => setTenure(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer font-medium text-sm"
-                  >
-                    {tenureOptions.map((m) => (
-                      <option key={m} value={m}>{m} Months</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
-                    </svg>
+                {/* Down Payment */}
+                <div className="space-y-1.5">
+                  <label htmlFor="downPayment" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Down Payment
+                  </label>
+                  <div className="relative group">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium group-focus-within:text-orange-400 transition-colors text-sm">₹</span>
+                    <input
+                      id="downPayment"
+                      type="number"
+                      value={downPayment}
+                      onChange={(e) => handleNumberInput(e, setDownPayment)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="10,000"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 pl-8 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-medium no-spinner text-sm"
+                    />
                   </div>
                 </div>
               </div>
+
+{/* Inline Row: Admission Date and Loan Tenure */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Admission Date */}
+                <div className="space-y-1.5">
+                  <label htmlFor="admissionDate" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Admission Date
+                  </label>
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendar(!showCalendar)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-medium text-sm flex items-center justify-between"
+                    >
+                      <span className={admissionDate ? 'text-white' : 'text-slate-600'}>
+                        {admissionDate ? new Date(admissionDate).toLocaleDateString('en-IN', { 
+                          day: 'numeric', 
+                          month: 'short', 
+                          year: 'numeric' 
+                        }) : 'Select date'}
+                      </span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                      </svg>
+                    </button>
+                    {showCalendar && <Calendar />}
+                  </div>
+                </div>
+
+                {/* Loan Tenure (Dropdown) */}
+                <div className="space-y-1.5">
+                  <label htmlFor="tenure" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Loan Tenure
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="tenure"
+                      value={tenure}
+                      onChange={(e) => setTenure(Number(e.target.value))}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer font-medium text-sm"
+                    >
+                      {tenureOptions.map((m) => (
+                        <option key={m} value={m}>{m} Months</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* EMI Date Info */}
+              {admissionDate && (
+                <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                  <p className="text-xs text-slate-400">
+                    EMI will be debited on <span className="text-orange-400 font-bold">{emiDateInfo.emiDay}th</span> of every month
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    First EMI: {emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              )}
 
               {/* Validation Error Message */}
               {error && (
@@ -299,7 +486,7 @@ const CourseCalculator = () => {
                 <div className="text-slate-600 font-bold text-lg">×</div>
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Duration</span>
-                  <span className="text-lg font-bold text-blue-400">{tenure} Mos</span>
+                  <span className="text-lg font-bold text-blue-400">{tenure} Month</span>
                 </div>
                 <div className="text-slate-600 font-bold text-lg">=</div>
                 <div className="flex flex-col items-center gap-1">
@@ -367,13 +554,46 @@ const CourseCalculator = () => {
               </button>
             </div>
 
-            {/* Modal Content */}
+{/* Modal Content */}
             <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {/* EMI Schedule Summary */}
+              {admissionDate && (
+                <div className="mb-6 p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+                  <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-orange-500" viewBox="0 0 16 16">
+                      <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                    </svg>
+                    EMI Schedule Details
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <span className="text-slate-500 text-xs">Admission Date:</span>
+                      <p className="text-white font-medium">{new Date(admissionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-xs">EMI Debit Day:</span>
+                      <p className="text-orange-400 font-medium">{emiDateInfo.emiDay}th of every month</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-xs">First EMI:</span>
+                      <p className="text-blue-400 font-medium">{emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array.from({ length: tenure }).map((_, i) => {
+{Array.from({ length: tenure }).map((_, i) => {
                   const date = new Date();
-                  date.setMonth(date.getMonth() + i);
+                  if (emiDateInfo.firstEMIMonth) {
+                    date.setTime(emiDateInfo.firstEMIMonth.getTime());
+                    date.setMonth(date.getMonth() + i);
+                  } else {
+                    date.setMonth(date.getMonth() + i);
+                  }
                   const monthName = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                  const emiDay = emiDateInfo.firstEMIMonth ? emiDateInfo.emiDay : date.getDate();
+                  const formattedDate = `${emiDay} ${date.toLocaleString('default', { month: 'short', year: 'numeric' })}`;
                   return (
                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/50 border border-slate-800 hover:border-blue-500/30 transition-all group">
                       <div className="flex items-center gap-4">
@@ -381,7 +601,7 @@ const CourseCalculator = () => {
                           {i + 1}
                         </span>
                         <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white tracking-wide">{monthName}</span>
+                          <span className="text-sm font-semibold text-white tracking-wide">{formattedDate}</span>
                           <span className="text-[10px] text-slate-500 uppercase font-medium">Scheduled Payment</span>
                         </div>
                       </div>
