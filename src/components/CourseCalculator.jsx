@@ -12,9 +12,9 @@ const CourseCalculator = () => {
   const [showModal, setShowModal] = useState(false);
 
   // Constants
-  const tenureOptions = [2, 3, 4, 5, 6, 7, 8, 9];
+  const tenureOptions = [3, 4, 5, 6, 7, 8, 9];
 
-  // EMI Date Logic based on admission date
+  // Instalment Date Logic based on admission date
   const getEMIDateInfo = (admissionDateStr) => {
     if (!admissionDateStr) return { emiDay: 7, firstEMIMonth: null };
 
@@ -160,10 +160,10 @@ const CourseCalculator = () => {
                   <button
                     onClick={() => handleDateSelect(day)}
                     className={`w-full h-full flex items-center justify-center text-sm rounded-lg transition-all ${isSelected
-                        ? 'bg-orange-500 text-white font-bold'
-                        : isToday
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          : 'text-white hover:bg-slate-800'
+                      ? 'bg-orange-500 text-white font-bold'
+                      : isToday
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                        : 'text-white hover:bg-slate-800'
                       }`}
                   >
                     {day}
@@ -234,23 +234,23 @@ const CourseCalculator = () => {
     // Header
     doc.setFontSize(22);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('Course EMI Calculator', pageWidth / 2, 20, { align: 'center' });
+    doc.text('Course Fee Instalment Calculator', pageWidth / 2, 20, { align: 'center' });
 
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text('Detailed Payment Roadmap & Loan Summary', pageWidth / 2, 28, { align: 'center' });
+    doc.text('Detailed Payment Roadmap & Mandate Summary', pageWidth / 2, 28, { align: 'center' });
 
     // Loan Summary Section
     doc.setFontSize(14);
     doc.setTextColor(0);
-    doc.text('Loan Summary', 14, 45);
+    doc.text('Mandate Summary', 14, 45);
 
     const loanSummaryData = [
       ['Total Course Fee', `INR ${feeValue.toLocaleString('en-IN')}`],
-      ['Down Payment', `INR ${downPaymentValue.toLocaleString('en-IN')}`],
-      ['Loan Amount', `INR ${loanAmount.toLocaleString('en-IN')}`],
-      ['Loan Tenure', `${tenure} Months`],
-      ['Monthly EMI', `INR ${Math.round(emi).toLocaleString('en-IN')}`],
+      ['Upfront Payment', `INR ${downPaymentValue.toLocaleString('en-IN')}`],
+      ['E-Mandate Amount', `INR ${loanAmount.toLocaleString('en-IN')}`],
+      ['Instalment Tenure', `${tenure} Months`],
+      ['Monthly Instalment', `INR ${Math.round(emi).toLocaleString('en-IN')}`],
       ['Total Payable', `INR ${totalAmount.toLocaleString('en-IN')}`]
     ];
 
@@ -258,8 +258,8 @@ const CourseCalculator = () => {
     if (admissionDate) {
       loanSummaryData.push(
         ['Admission Date', formatDateLong(admissionDate)],
-        ['EMI Debit Day', `${emiDateInfo.emiDay}th of every month`],
-        ['First EMI Date', emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) || 'N/A']
+        ['Instalment Debit Day', `${emiDateInfo.emiDay}th of every month`],
+        ['First Instalment Date', emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) || 'N/A']
       );
     }
 
@@ -293,7 +293,7 @@ const CourseCalculator = () => {
 
     autoTable(doc, {
       startY: scheduleStartY + 5,
-      head: [['#', 'Month', 'Installment Amount', 'Status']],
+      head: [['#', 'Month', 'Instalment Amount', 'Status']],
       body: scheduleData,
       theme: 'striped',
       headStyles: { fillColor: accentColor },
@@ -304,10 +304,10 @@ const CourseCalculator = () => {
     const finalY = doc.lastAutoTable.finalY + 10;
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text('Generated via Course Calculator - Zero Cost EMI Plan Applied.', 14, finalY);
+    doc.text('Generated via Course Fee Instalment Calculator - Zero Cost Instalment Plan Applied.', 14, finalY);
 
     // Save PDF
-    doc.save(`Course_EMI_Plan_${new Date().toLocaleDateString()}.pdf`);
+    doc.save(`Course_Fee_Instalment_Plan_${new Date().toLocaleDateString()}.pdf`);
   };
 
   return (
@@ -322,7 +322,7 @@ const CourseCalculator = () => {
         {/* HEADER SECTION */}
         <div className="text-center space-y-3">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-blue-500 tracking-tight drop-shadow-sm">
-            Course EMI Calculator
+            Course Fee Instalment Calculator
           </h1>
           <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto">
             Calculate your monthly installments for course fees
@@ -334,9 +334,9 @@ const CourseCalculator = () => {
           <div className="flex-1 bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-2xl shadow-2xl p-6 lg:p-8 h-fit">
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-white tracking-tight">
-                Loan Details
+                E-Nach/Mandate Details
               </h2>
-              <p className="text-slate-400 text-sm mt-1.5 font-medium">Configure your education loan preferences.</p>
+              <p className="text-slate-400 text-sm mt-1.5 font-medium">Configure your education mandate preferences.</p>
             </div>
 
             <div className="space-y-7">
@@ -364,7 +364,7 @@ const CourseCalculator = () => {
                 {/* Down Payment */}
                 <div className="space-y-1.5">
                   <label htmlFor="downPayment" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Down Payment
+                    Upfront Payment
                   </label>
                   <div className="relative group">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium group-focus-within:text-orange-400 transition-colors text-sm">₹</span>
@@ -417,7 +417,7 @@ const CourseCalculator = () => {
                 {/* Loan Tenure (Dropdown) */}
                 <div className="space-y-1.5">
                   <label htmlFor="tenure" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Loan Tenure
+                    Instalment Tenure
                   </label>
                   <div className="relative">
                     <select
@@ -443,10 +443,10 @@ const CourseCalculator = () => {
               {admissionDate && (
                 <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800">
                   <p className="text-xs text-slate-400">
-                    EMI will be debited on <span className="text-orange-400 font-bold">{emiDateInfo.emiDay}th</span> of every month
+                    Instalment will be debited on <span className="text-orange-400 font-bold">{emiDateInfo.emiDay}th</span> of every month
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
-                    First EMI: {emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    First Instalment: {emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
                 </div>
               )}
@@ -487,7 +487,7 @@ const CourseCalculator = () => {
                         <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1zm3 0a2 2 0 0 1-2 2v4a2 2 0 0 1 2 2h10a2 2 0 0 1 2-2V6a2 2 0 0 1-2-2z" />
                       </svg>
                     </div>
-                    <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase">Loan Amount</span>
+                    <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase">E-Mandate Amount</span>
                   </div>
                   <div className="text-2xl font-bold text-white">
                     ₹{loanAmount.toLocaleString('en-IN')}
@@ -506,7 +506,7 @@ const CourseCalculator = () => {
                         <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z" />
                       </svg>
                     </div>
-                    <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase">Monthly EMI</span>
+                    <span className="text-slate-500 text-[10px] font-bold tracking-widest uppercase">Monthly Instalment</span>
                   </div>
                   <div className="text-2xl font-bold text-emerald-400">
                     ₹{Math.round(emi).toLocaleString('en-IN')}
@@ -573,7 +573,7 @@ const CourseCalculator = () => {
                   <path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z" />
                 </svg>
                 <p className="text-slate-500 text-[11px] leading-relaxed">
-                  Specific <span className="font-semibold text-slate-400">Zero Cost EMI</span> plan applied. No processing fees.
+                  Specific <span className="font-semibold text-slate-400">Zero Cost Instalment</span> plan applied. No processing fees.
                 </p>
               </div>
             </div>
@@ -589,7 +589,7 @@ const CourseCalculator = () => {
             <div className="p-6 border-b border-slate-800 flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-bold text-white">Payment Details</h3>
-                <p className="text-slate-400 text-sm mt-1">Detailed month-wise installment breakdown</p>
+                <p className="text-slate-400 text-sm mt-1">Detailed month-wise instalment breakdown</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -610,7 +610,7 @@ const CourseCalculator = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-orange-500" viewBox="0 0 16 16">
                       <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" />
                     </svg>
-                    EMI Schedule Details
+                    Instalment Schedule Details
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div>
@@ -618,11 +618,11 @@ const CourseCalculator = () => {
                       <p className="text-white font-medium">{formatDateLong(admissionDate)}</p>
                     </div>
                     <div>
-                      <span className="text-slate-500 text-xs">EMI Debit Day:</span>
+                      <span className="text-slate-500 text-xs">Instalment Debit Day:</span>
                       <p className="text-orange-400 font-medium">{emiDateInfo.emiDay}th of every month</p>
                     </div>
                     <div>
-                      <span className="text-slate-500 text-xs">First EMI:</span>
+                      <span className="text-slate-500 text-xs">First Instalment:</span>
                       <p className="text-blue-400 font-medium">{emiDateInfo.firstEMIMonth?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                     </div>
                   </div>
