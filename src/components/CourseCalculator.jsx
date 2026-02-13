@@ -231,19 +231,10 @@ const CourseCalculator = () => {
     const primaryColor = [59, 130, 246]; // blue-500
     const accentColor = [249, 115, 22]; // orange-500
 
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('Course Fee Instalment Calculator', pageWidth / 2, 20, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Detailed Payment Roadmap & Mandate Summary', pageWidth / 2, 28, { align: 'center' });
-
-    // Loan Summary Section
+    // Mandate Summary Section
     doc.setFontSize(14);
     doc.setTextColor(0);
-    doc.text('Mandate Summary', 14, 45);
+    doc.text('Mandate Summary', 14, 15);
 
     const loanSummaryData = [
       ['Total Course Fee', `INR ${feeValue.toLocaleString('en-IN')}`],
@@ -264,7 +255,7 @@ const CourseCalculator = () => {
     }
 
     autoTable(doc, {
-      startY: 50,
+      startY: 22,
       head: [['Metric', 'Value']],
       body: loanSummaryData,
       theme: 'grid',
@@ -273,7 +264,7 @@ const CourseCalculator = () => {
     });
 
     // Payment Schedule Section
-    const scheduleStartY = doc.lastAutoTable.finalY + 15;
+    const scheduleStartY = doc.lastAutoTable.finalY + 10;
     doc.setFontSize(14);
     doc.text('Monthly Payment Schedule', 14, scheduleStartY);
 
@@ -301,7 +292,7 @@ const CourseCalculator = () => {
     });
 
     // Footer
-    const finalY = doc.lastAutoTable.finalY + 10;
+    const finalY = doc.lastAutoTable.finalY + 6;
     doc.setFontSize(8);
     doc.setTextColor(150);
     doc.text('Generated via Course Fee Instalment Calculator - Zero Cost Instalment Plan Applied.', 14, finalY);
